@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Y tú qué planes — Juego de Memoria</title>
+  <meta name="description" content="Juego de memoria de Y tú qué planes. Encuentra las parejas antes de que el tiempo se acabe.">
+  <style>
+  :root{
+    --bg:#33aba0;
+    --card-bg:#ffffff;
+    --text:#0f172a;
+    --muted:#334155;
+    --btn:#0f172a;
+    --btn-hover:#111827;
+    --ring:rgba(17,24,39,.12);
+    --shadow:0 10px 30px rgba(0,0,0,.15);
+    --radius:20px;
+    --surface:#f8fafc;
+  }
+
+  *{ box-sizing:border-box }
+  html,body{ height:100% }
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial;
+    display:flex; align-items:center; justify-content:center;
+    padding:24px;
+  }
+
+  /* Contenedor principal */
+.shell{
+  width: 95vw;          /* ocupa casi todo el ancho */
+  height: 95vh;         /* ocupa casi toda la altura */
+  background:#fff;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.15);
+  border:1px solid rgba(15,23,42,.06);
+  overflow:hidden;
+  display:flex;
+  flex-direction: column;
+}
+
+
+  /* Header */
+  header{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    padding: min(22px, 4vw) min(24px, 4vw) 12px;
+    flex-wrap: wrap; /* responsive */
+  }
+  header img{
+    width: clamp(56px, 12vw, 88px);
+    height: clamp(56px, 12vw, 88px);
+    object-fit: contain;
+    border: none;
+    border-radius: 12px;
+    background: #fff;
+  }
+  header h1{
+    margin:0;
+    font-size: clamp(20px, 3.8vw, 28px);
+    line-height: 1.2;
+  }
+  header p{
+    margin:6px 0 0;
+    color: var(--muted);
+    font-size: clamp(13px, 2.8vw, 14px);
+  }
+
+  /* HUD */
+.hud {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px min(24px, 4vw) 20px;
+  border-top: 1px solid rgba(15,23,42,.06);
+  background: #fff;
+  z-index: 5;
+  flex-wrap: nowrap;         /* <- no permite saltar de línea */
+  overflow-x: auto;          /* <- si no entran, se scrollean */
+  -webkit-overflow-scrolling: touch;
+}
+
+  .pill{
+    background: var(--surface);
+    border:1px solid rgba(15,23,42,.06);
+    border-radius: 999px;
+    padding: 8px 12px;
+    font-weight:700;
+    display:inline-flex;
+    gap:6px;
+    align-items:center;
+    font-size: clamp(10px, 2.5vw, 14px);
+  }
+
+  /* Botones */
+  .btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:10px;
+    padding: 10px 14px;
+    border-radius:12px;
+    font-weight:700;
+    font-size: clamp(10px, 2.5vw, 14px);
+    text-decoration:none;
+    cursor:pointer;
+    border:1px solid rgba(15,23,42,.14);
+    background:var(--btn);
+    color:#fff;
+    transition: background .2s ease, transform .06s ease, box-shadow .2s ease;
+    box-shadow: 0 6px 16px rgba(0,0,0,.12);
+  }
+  .btn:hover{ background:var(--btn-hover); transform: translateY(-1px); box-shadow: 0 10px 24px rgba(0,0,0,.18); }
+  .btn:active{ transform: translateY(0); box-shadow: 0 6px 16px rgba(0,0,0,.12); }
+  .btn-ghost{ background:#fff; color:var(--text); }
+  .btn-ghost:hover{ background:#f1f5f9; }
+
+  /* Grid - MODIFICADO para cartas más pequeñas y más columnas */
+  .grid-wrap{
+  padding: 0 min(24px, 4vw) min(24px, 4vw);
+  flex: 1;                         /* <-- ocupa el resto del alto */
+  overflow: auto;                  /* <-- scroll interno */
+  -webkit-overflow-scrolling: touch; /* suaviza en iOS */
+}
+.grid{
+  display:grid;
+  gap: clamp(8px, 1.5vw, 12px);
+  grid-template-columns: repeat(auto-fill, minmax(clamp(80px, 12vw, 110px), 1fr));
+  /* claves para que baje a nuevas filas */
+  grid-auto-flow: row dense;
+  align-content: start;
+  background: var(--surface);
+  border:1px dashed rgba(15,23,42,.12);
+  border-radius:16px;
+  padding: clamp(10px, 2.5vw, 18px);
+}
+
+
+
+  /* Carta */
+  .card{
+    position:relative;
+    perspective:800px;
+    aspect-ratio: 3 / 4;   /* responsive sin altura fija */
+    width: 100%;
+    cursor:pointer;
+  }
+  .inner{
+    position:absolute;
+    inset:0;
+    transition: transform .4s ease;
+    transform-style: preserve-3d;
+  }
+  .card.flipped .inner{ transform: rotateY(180deg); }
+
+  .face, .back{
+    position:absolute; inset:0;
+    border-radius:14px;
+    backface-visibility:hidden;
+    display:flex; align-items:center; justify-content:center;
+    border:1px solid rgba(15,23,42,.08);
+    box-shadow: 0 3px 10px rgba(0,0,0,.08);
+  }
+  .back{
+    background:#fff;
+  }
+  .back img{
+    width: 90%;
+    height: 90%;
+    object-fit: contain;
+  }
+  .face{
+  background:#fff;
+  transform: rotateY(180deg);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:14px;
+}
+.face img{
+  width: 90%;
+  height: 90%;
+  object-fit: contain;
+  pointer-events: none; /* evita que interfiera con clics */
+}
+  .disabled{ pointer-events:none; opacity:.6; }
+
+  /* Modal */
+  .modal{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.55);
+    align-items:center;
+    justify-content:center;
+    z-index:1000;
+  }
+  .modal.show{ display:flex; }
+  .modal-content{
+    width: 92%;
+    max-width: 520px;
+    background:#fff;
+    border-radius:16px;
+    padding: clamp(16px, 4vw, 22px);
+    box-shadow:0 12px 30px rgba(0,0,0,.25);
+    text-align:center;
+    position:relative;
+  }
+  .modal h2{ margin:6px 0 6px; font-size: clamp(18px, 4.6vw, 22px); }
+  .modal p{ color:#334155; font-size: clamp(13px, 3.2vw, 15px); }
+
+  /* Accesibilidad */
+  .btn:focus-visible, .card:focus-visible{ outline: 3px solid var(--ring); border-radius:12px; }
+
+ @media (max-width: 556px) and (min-width: 461px) {
+  .grid{
+    /* Forzar exactamente 4 columnas en este rango */
+    grid-template-columns: repeat(5, 1fr);
+    gap: clamp(2px, 2.5px, 3px);
+    }
+  }
+
+  @media (max-width: 460px) and (min-width: 381px) {
+  .grid{
+    /* Forzar exactamente 4 columnas en este rango */
+    grid-template-columns: repeat(4, 1fr);
+    gap: clamp(2px, 2.5px, 3px);
+    }
+  }
+  /* Micro-ajustes responsive SÚPER OPTIMIZADOS */
+  @media (max-width: 380px){
+    .grid{
+      /* Garantizar 4+ columnas: máximo 22% del ancho disponible por carta */
+    grid-template-columns: repeat(5, 1fr); /* <- cambia solo esta línea */
+      gap: 2px;
+    }
+    header{
+      padding: 6px 10px 3px;
+    }
+    .hud{
+      padding: 4px 10px 6px;
+      gap: 3px;
+    }
+  }
+
+  @media (max-height: 520px) and (orientation: landscape){
+    body{ padding: 4px; }
+    .grid-wrap{ padding: 0 6px 6px; }
+    .grid{
+      /* Landscape: cartas súper pequeñas */
+      grid-template-columns: repeat(auto-fit, minmax(25px, 1fr));
+      gap: 2px;
+      padding: 4px;
+    }
+    header{
+      padding: 4px 8px 2px;
+    }
+    .hud{
+      padding: 3px 8px 4px;
+    }
+  }
+
+</style>
+
+</head>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+<body>
+  <div class="shell">
+    <header>
+      <img src="multimedia/y-tu-que-planes.png" alt="Logo Y tú qué planes - PROMPERÚ">
+      <div>
+        <h1>Juego de Memoria</h1>
+        <p>Encuentra todas las parejas antes de que el tiempo llegue a cero. ¡Avanza de nivel para ganar más puntaje!</p>
+      </div>
+    </header>
+
+    <div class="hud">
+      <div class="pill">Nivel: <span id="level">1</span></div>
+      <div class="pill">Tiempo: ⏱️ <span id="time">60</span>s</div>
+      <div class="pill">Puntaje: ⭐ <span id="score">0</span></div>
+      <a class="btn btn-ghost" href="inicio.html" aria-label="Volver al inicio">Inicio</a>
+    </div>
+
+    <div class="grid-wrap">
+      <div id="grid" class="grid" aria-live="polite"></div>
+    </div>
+  </div>
+
+  <!-- Modal genérico -->
+  <div id="modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-content">
+      <h2 id="modal-title">Título</h2>
+      <p id="modal-text">Mensaje…</p>
+      <div style="display:flex; gap:10px; justify-content:center; margin-top:10px;">
+        <button id="modal-primary" class="btn">Aceptar</button>
+        <button id="modal-secondary" class="btn btn-ghost" style="display:none;">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ========= Configuración =========
+    const LEVELS = [
+      { pairs: 6,  time: 60 },  // 12 cartas
+      { pairs: 8,  time: 75 },  // 16 cartas
+      { pairs: 11, time: 90 },  // 22 cartas
+    ];
+    const BACK_IMG = "multimedia/y-tu-que-planes.png"; // Asegura la ruta correcta del logo
+        const FACE_SET = [
+  "multimedia/cartas/carta1.png",
+  "multimedia/cartas/carta2.png",
+  "multimedia/cartas/carta3.png",
+  "multimedia/cartas/carta4.png",
+  "multimedia/cartas/carta5.png",
+  "multimedia/cartas/carta6.png",
+  "multimedia/cartas/carta7.png",
+  "multimedia/cartas/carta8.png",
+  "multimedia/cartas/carta9.png",
+  "multimedia/cartas/carta10.png",
+  "multimedia/cartas/carta11.png",
+  "multimedia/cartas/carta12.png",
+  "multimedia/cartas/carta13.png",
+  "multimedia/cartas/carta14.png",
+  "multimedia/cartas/carta15.png",
+];
+    // ========= Estado =========
+    let levelIndex = 0;
+    let score = 0;
+    let timeLeft = 0;
+    let timerId = null;
+    let flipped = [];   // cartas volteadas (elementos)
+    let locked = false; // bloquear input durante animaciones
+    let matchedPairs = 0;
+
+
+
+    let bgStarted = false;
+
+    function startBgMusic(){
+    if (bgStarted) return;
+    const bg = document.getElementById("bg-music");
+    if (!bg) return;
+
+    try {
+        bg.volume = 0.15;          // volumen bajito
+        bg.currentTime = 0;
+        bg.play().then(() => {     // si reproduce, marcamos bandera
+        bgStarted = true;
+        // (opcional) fade-in suave
+        const target = 0.25;     // volumen final
+        const step = 0.02;
+        const int = setInterval(() => {
+            bg.volume = Math.min(target, bg.volume + step);
+            if (bg.volume >= target) clearInterval(int);
+        }, 120);
+        });
+    } catch(e) {
+        console.log("No se pudo iniciar la música:", e);
+    }
+    }
+
+
+
+    // ========= Utilidades =========
+    const $ = sel => document.querySelector(sel);
+    const grid = $("#grid");
+    const elLevel = $("#level");
+    const elTime  = $("#time");
+    const elScore = $("#score");
+
+    function shuffle(arr){
+      for (let i = arr.length -1; i > 0; i--){
+        const j = Math.floor(Math.random() * (i+1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    function samplePairs(n){
+      // Escoge n íconos únicos del set
+      const copy = [...FACE_SET];
+      shuffle(copy);
+      return copy.slice(0, n);
+    }
+
+    // ========= Render de nivel =========
+    function buildLevel(){
+      const cfg = LEVELS[levelIndex];
+      elLevel.textContent = (levelIndex + 1);
+      timeLeft = cfg.time;
+      elTime.textContent = timeLeft.toString();
+
+      matchedPairs = 0;
+      flipped = [];
+      locked = false;
+      clearInterval(timerId);
+
+      // Generar pares
+      const faces = samplePairs(cfg.pairs);
+      const deck = shuffle([...faces, ...faces]); // duplicado y mezclado
+
+      // Render grid
+      grid.innerHTML = "";
+      deck.forEach(face => {
+        const card = document.createElement("button");
+        card.className = "card";
+        card.setAttribute("aria-label","Carta de memoria");
+        card.innerHTML = `
+          <div class="inner">
+            <div class="face"><img src="${face}" alt="Carta"></div>
+            <div class="back"><img src="${BACK_IMG}" alt="Logo Y tú qué planes"></div>
+          </div>
+        `;
+
+        card.dataset.face = face;
+        card.addEventListener("click", onFlip);
+        grid.appendChild(card);
+      });
+
+      startTimer();
+    }
+
+    function startTimer(){
+      timerId = setInterval(() => {
+        timeLeft--;
+        elTime.textContent = timeLeft.toString();
+        if (timeLeft <= 0){
+          clearInterval(timerId);
+          lockAll(true);
+          showLose();
+        }
+      }, 1000);
+    }
+
+    function lockAll(state){
+      [...grid.children].forEach(c => c.classList.toggle("disabled", state));
+      locked = state;
+    }
+
+    // ========= Lógica de juego =========
+    function onFlip(e){
+      if (locked) return;
+      const card = e.currentTarget;
+      if (card.classList.contains("flipped")) return;
+
+      card.classList.add("flipped");
+      flipped.push(card);
+
+      if (flipped.length === 2){
+        locked = true;
+        const [a,b] = flipped;
+        if (a.dataset.face === b.dataset.face){
+          // match
+          score += 100;
+          elScore.textContent = score.toString();
+          matchedPairs++;
+          flipped = [];
+          locked = false;
+
+          // ¿completó nivel?
+          if (matchedPairs === LEVELS[levelIndex].pairs){
+            clearInterval(timerId);
+            setTimeout(() => showWinLevel(), 350);
+          }
+        } else {
+          // no match: voltear de regreso
+          setTimeout(() => {
+            a.classList.remove("flipped");
+            b.classList.remove("flipped");
+            flipped = [];
+            locked = false;
+          }, 650);
+        }
+      }
+    }
+
+    // ========= Modales =========
+    const modal = $("#modal");
+    const modalTitle = $("#modal-title");
+    const modalText  = $("#modal-text");
+    const modalPrimary = $("#modal-primary");
+    const modalSecondary = $("#modal-secondary");
+
+    function openModal({title,text,primaryText,onPrimary,secondaryText,onSecondary}){
+      modalTitle.textContent = title;
+      modalText.innerHTML = text;
+      modalPrimary.textContent = primaryText || "Aceptar";
+      modalPrimary.onclick = () => { closeModal(); onPrimary && onPrimary(); };
+      if (secondaryText){
+        modalSecondary.style.display = "";
+        modalSecondary.textContent = secondaryText;
+        modalSecondary.onclick = () => { closeModal(); onSecondary && onSecondary(); };
+      } else {
+        modalSecondary.style.display = "none";
+        modalSecondary.onclick = null;
+      }
+      modal.classList.add("show");
+    }
+    function closeModal(){ modal.classList.remove("show"); }
+
+    function showLose(){
+      openModal({
+        title: "¡Se acabó el tiempo!",
+        text: `No te preocupes, puedes <strong>reintentar este nivel</strong>.`,
+        primaryText: "Reintentar nivel",
+        onPrimary: () => buildLevel()
+      });
+    }
+
+    function showWinLevel(){
+    const last = (levelIndex === LEVELS.length - 1);
+
+    // 🔔🎉 efectos de victoria SIEMPRE (nivel superado o final)
+    fireConfetti();
+    playWinSound();
+
+    openModal({
+        title: last ? "¡Completaste todos los niveles! 🎉" : "¡Nivel superado! ✅",
+        text: last
+        ? `Puntaje total: <strong>${score}</strong><br>¡Excelente memoria!`
+        : `Vas muy bien. Tu puntaje actual es <strong>${score}</strong>.`,
+        primaryText: last ? "Volver a jugar (Nivel 1)" : "Siguiente nivel",
+        onPrimary: () => {
+        if (last){
+            levelIndex = 0;
+            score = 0;
+            elScore.textContent = "0";
+            buildLevel();
+        } else {
+            levelIndex++;
+            buildLevel();
+        }
+        }
+    });
+    }
+
+
+    // ========= Inicio =========
+    // Mensaje inicial breve
+    openModal({
+      title: "🧠 ¡Atento!",
+      text: "Encuentra todas las parejas. <br> Avanzas de nivel automáticamente. <br> Ganas <strong>+100</strong> por cada pareja.",
+      primaryText: "Empezar",
+      onPrimary: () => { startBgMusic(); buildLevel(); }
+    });
+  </script>
+  <script>
+    // --- Confetti: varios estallidos bonitos ---
+function fireConfetti(){
+  const duration = 1800;
+  const end = Date.now() + duration;
+
+  (function frame(){
+    confetti({
+      particleCount: 3,
+      startVelocity: 40,
+      spread: 70,
+      origin: { x: Math.random() * 0.2 + 0.0, y: Math.random() - 0.2 }
+    });
+    confetti({
+      particleCount: 3,
+      startVelocity: 40,
+      spread: 70,
+      origin: { x: Math.random() * 0.2 + 0.8, y: Math.random() - 0.2 }
+    });
+    if (Date.now() < end) requestAnimationFrame(frame);
+  })();
+
+  // Un par de ráfagas centrales
+  confetti({ particleCount: 120, spread: 90, origin: { y: 0.3 } });
+  setTimeout(() => confetti({ particleCount: 120, spread: 120, origin: { y: 0.4 } }), 250);
+}
+
+// --- Sonidito de victoria (Web Audio, sin archivos) ---
+function playWinSound(){
+  const audio = document.getElementById("win-audio");
+  if(audio){
+    audio.currentTime = 0; // reinicia desde el inicio
+    audio.play().catch(e => {
+      console.log("No se pudo reproducir el audio:", e);
+    });
+  }
+}
+
+  </script>
+  <audio id="win-audio" src="multimedia/level-complete-394515.mp3" preload="auto"></audio>
+  <audio id="bg-music" src="multimedia/music-for-games-153673.mp3" preload="auto" loop></audio>
+
+</body>
+</html>

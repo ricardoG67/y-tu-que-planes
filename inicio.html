@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Y tú qué planes | Juegos</title>
+  <meta name="description" content="Plataforma oficial de viajes en Perú - PROMPERÚ. Juegos: Memoria y Ruleta." />
+  <style>
+    :root{
+      --bg: #33aba0;
+      --card-bg: #ffffff;
+      --text: #0f172a;
+      --muted: #334155;
+      --btn: #0f172a;
+      --btn-hover: #111827;
+      --btn-ghost-text: #0f172a;
+      --ring: rgba(17,24,39,.12);
+      --radius: 20px;
+      --shadow: 0 10px 30px rgba(0,0,0,.15);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji","Segoe UI Emoji";
+      color: var(--text);
+      background: var(--bg);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding: 24px;
+    }
+    .card{
+      width: 100%;
+      max-width: 840px;
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      border: 1px solid rgba(15,23,42,.06);
+    }
+    .header{
+      padding: 28px 28px 12px;
+      display:flex;
+      align-items:center;
+      gap:16px;
+    }
+    .brand{
+      display:flex;
+      align-items:center;
+      gap: 14px;
+    }
+    .brand img{
+      width: 90px;
+      height: 90px;
+      object-fit: contain;
+      border-radius: 12px;
+      border: none;
+      background: #fff;
+    }
+    .brand h1{
+      margin:0;
+      font-size: clamp(20px, 2.4vw, 28px);
+      line-height:1.2;
+      letter-spacing:.2px;
+    }
+    .tagline{
+      margin:6px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+      max-width: none;
+      width: 100%;
+    }
+    .content{ padding: 12px 28px 28px; }
+    .panel{
+      background: #f8fafc;
+      border: 1px solid rgba(15,23,42,.06);
+      border-radius: 16px;
+      padding: 20px;
+    }
+    .panel h2{ margin:0 0 8px; font-size: clamp(18px, 2.2vw, 22px); }
+    .panel p{ margin:0 0 18px; color: var(--muted); font-size: 14px; }
+    .actions{ display:grid; grid-template-columns: 1fr; gap:12px; }
+    @media (min-width: 560px){ .actions{ grid-template-columns: 1fr 1fr; } }
+    .btn{
+      display:inline-flex; align-items:center; justify-content:center; gap:10px;
+      padding: 14px 16px; border-radius: 14px; text-decoration:none; font-weight: 700;
+      border: 1px solid rgba(15,23,42,.14); background: var(--btn); color: #fff;
+      box-shadow: 0 6px 16px rgba(0,0,0,.12);
+      transition: transform .06s ease, box-shadow .2s ease, background .2s ease, opacity .2s ease;
+      cursor: pointer; text-align:center;
+    }
+    .btn:hover{ background: var(--btn-hover); transform: translateY(-1px); box-shadow: 0 10px 24px rgba(0,0,0,.18); }
+    .btn:active{ transform: translateY(0); box-shadow: 0 6px 16px rgba(0,0,0,.12); }
+    .btn-ghost{ background: #ffffff; color: var(--btn-ghost-text); border: 1px dashed rgba(15,23,42,.25); box-shadow: none; }
+    .btn-ghost:hover{ background: #f1f5f9; border-style: solid; }
+    .soon-badge{
+      font-size: 12px; font-weight: 800; background: #e2e8f0; color: #0f172a;
+      padding: 4px 8px; border-radius: 999px; border: 1px solid rgba(15,23,42,.08);
+    }
+    .footer{
+      padding: 16px 28px 24px; display:flex; align-items:center; justify-content:space-between; gap:8px;
+      border-top: 1px solid rgba(15,23,42,.06); background: #ffffff;
+    }
+    .hashtags{ color: var(--muted); font-size: 13px; }
+    .mark{
+      background: #ecfeff; border: 1px solid #a5f3fc; color: #0e7490;
+      padding: 2px 8px; border-radius: 999px; font-weight: 700; font-size: 12px;
+    }
+    .btn:focus{ outline: 3px solid transparent; box-shadow: 0 0 0 4px var(--ring); }
+    a:focus-visible{ outline: 3px solid var(--ring); border-radius: 10px; }
+
+    /* ===== MODAL ===== */
+    .modal{
+      display: none;             /* mantener oculto por defecto */
+      position: fixed;
+      z-index: 1000;
+      left: 0; top: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.6);
+      align-items:center;        /* (se activan cuando se muestra) */
+      justify-content:center;    /* (se activan cuando se muestra) */
+    }
+    .modal.show{                 /* <- clase para mostrar */
+      display: flex;
+    }
+    .modal-content{
+      background: #fff; padding: 24px; border-radius: 16px;
+      width: 90%; max-width: 480px; text-align: center; position: relative;
+      box-shadow: 0 12px 30px rgba(0,0,0,.25);
+    }
+    .modal-content h2{ margin-top: 0; }
+    .modal-content p{ font-size: 15px; line-height: 1.5; color: #334155; }
+    .modal-content .close{
+      position: absolute; right: 16px; top: 12px; font-size: 22px; font-weight: bold; color: #333; cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <main class="card" role="main" aria-label="Inicio de juegos Y tú qué planes">
+    <header class="header">
+      <div class="brand">
+        <img src="multimedia/y-tu-que-planes.png" alt="Logo Y tú qué planes - PROMPERÚ" />
+        <div>
+          <h1>Y tú qué planes — Juegos</h1>
+          <p class="tagline">
+            Plataforma oficial de viajes en Perú — <strong>PROMPERÚ</strong>. La cuenta oficial de turismo que reúne a los peruanos que aman viajar por el <strong>#Perú</strong>.
+            Usa <strong>#ytuqueplanes</strong> o <strong>#ConoceElPerú</strong> para compartir.
+          </p>
+        </div>
+      </div>
+    </header>
+
+    <section class="content">
+      <div class="panel" aria-labelledby="titulo-juegos">
+        <h2 id="titulo-juegos">Elige tu juego</h2>
+        <p>Diviértete con nuestras opciones. Puedes empezar por el juego de Memoria o probar la Ruleta.</p>
+        <div class="actions">
+          <!-- Agregado id y href="#" para evitar navegación inmediata -->
+          <a class="btn" href="#" id="btn-memoria" aria-label="Ir al juego de Memoria">🧠 Juego de Memoria</a>
+
+          <a class="btn btn-ghost" href="ruleta.html" aria-label="Ir al juego de Ruleta">
+            🎡 Ruleta 
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <span class="hashtags">#ytuqueplanes &nbsp;•&nbsp; #ConoceElPerú</span>
+      <span class="mark" aria-label="Marca oficial">PROMPERÚ</span>
+    </footer>
+  </main>
+
+  <!-- Modal (fuera de .actions para mantenerlo limpio) -->
+  <div id="modal-memoria" class="modal" aria-hidden="true" role="dialog" aria-labelledby="modal-title">
+    <div class="modal-content">
+      <span class="close" aria-label="Cerrar">&times;</span>
+      <h2 id="modal-title">🧠 ¡Atento, tienes 1 minuto!</h2>
+      <p>
+        El juego de memoria consiste en encontrar las parejas de cartas idénticas.<br><br>
+        ✅ Nivel 1: 12 tarjetas (1 minuto).<br>
+        ✅ Nivel 2: 16 tarjetas (1 min 15 seg).<br>
+        ✅ Nivel 3: 24 tarjetas (1 min 30 seg).<br><br>
+        Haz match lo más rápido posible para acumular puntaje. ¡Suerte!
+      </p>
+      <button id="start-memoria" class="btn">Comenzar</button>
+    </div>
+  </div>
+
+  <script>
+    // abrir modal
+    const btnMemoria = document.getElementById("btn-memoria");
+    const modal = document.getElementById("modal-memoria");
+    const btnClose = modal.querySelector(".close");
+    const btnStart = document.getElementById("start-memoria");
+
+    btnMemoria.addEventListener("click", (e) => {
+      e.preventDefault();
+      modal.classList.add("show");
+      modal.setAttribute("aria-hidden", "false");
+    });
+
+    // cerrar modal con X
+    btnClose.addEventListener("click", () => {
+      modal.classList.remove("show");
+      modal.setAttribute("aria-hidden", "true");
+    });
+
+    // cerrar modal clickeando afuera
+    window.addEventListener("click", (event) => {
+      if (event.target === modal) {
+        modal.classList.remove("show");
+        modal.setAttribute("aria-hidden", "true");
+      }
+    });
+
+    // comenzar juego (redirige a memoria.html)
+    btnStart.addEventListener("click", () => {
+      window.location.href = "memoria.html";
+    });
+  </script>
+</body>
+</html>

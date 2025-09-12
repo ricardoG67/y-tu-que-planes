@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Y tú qué planes — Ruleta</title>
+<meta name="description" content="Ruleta de categorías: gastronomía, danzas, actividades y más.">
+<style>
+  :root{
+    --bg:#33aba0;
+    --text:#0f172a;
+    --muted:#334155;
+    --card:#ffffff;
+    --btn:#0f172a;
+    --btn-hover:#111827;
+    --ring:rgba(17,24,39,.12);
+    --shadow:0 10px 30px rgba(0,0,0,.15);
+    --radius:20px;
+    --surface:#f8fafc;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family: ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Arial;
+    display:flex; align-items:center; justify-content:center; padding:24px;
+  }
+  .shell{
+    width:95vw; height:95vh; max-width:1200px;
+    background:var(--card); border-radius:var(--radius);
+    border:1px solid rgba(15,23,42,.06); box-shadow:var(--shadow);
+    display:flex; flex-direction:column; overflow:hidden;
+  }
+  header{display:flex; align-items:center; gap:14px; padding:18px 22px 8px; flex-wrap:wrap}
+  header img{width: clamp(56px, 10vw, 84px); height: clamp(56px, 10vw, 84px); object-fit:contain; border-radius:12px}
+  header h1{margin:0; font-size: clamp(20px, 3.6vw, 28px)}
+  header p{margin:6px 0 0; color:var(--muted); font-size: clamp(13px, 2.6vw, 14px)}
+
+/* Base: aside elástico pero con límites */
+.main{
+  flex:1;
+  display:grid;
+  grid-template-columns: minmax(0,1fr) clamp(180px, 26vw, 260px); /* <= antes era min(26vw, 280px) */
+  gap:18px;
+  padding: 12px 18px 20px;
+  min-height: 0;
+  overflow: auto; /* <= habilita scroll si no entra */
+}
+
+/* En 900px: achica un poco más el aside */
+@media (max-width: 900px){
+  .main{ grid-template-columns: minmax(0,1fr) clamp(160px, 28vw, 240px); }
+}
+
+/* Mantén 2 columnas hasta 640px y recién ahí apila */
+/* Mantén 2 columnas hasta 640px y recién ahí apila */
+@media (max-width: 550px){
+  .main{ 
+    grid-template-columns: 1fr;   /* apila */
+  }
+  .side{ 
+    max-width: 280px;             /* más angosto que los 360px */
+    margin: 0 auto; 
+    padding: 12px;                /* menos padding */
+    gap: 10px; 
+  }
+  .side img{ 
+    width: 72px!important;; 
+    height: 72px!important;;                  /* logo más pequeño */
+  }
+  .side .pill{ 
+    font-size: 12px;              /* letritas más chicas */
+    padding:6px 10px;
+  }
+  .side .btn{ 
+    font-size: 12px;              /* botones más chicos */
+    padding:10px 14px;
+    width: min(200px, 90%);
+  }
+}
+
+
+
+
+
+  .wheel-wrap{
+    position:relative;
+    display:flex; align-items:center; justify-content:center;
+    background:var(--surface);
+    border:1px dashed rgba(15,23,42,.12);
+    border-radius:16px;
+    padding: 20px;
+    min-width: 0; min-height: 0;
+  }
+  
+  .wheel-container {
+    position: relative;
+    width: 100%;
+    max-width: 500px;
+    aspect-ratio: 1;
+  }
+  
+  .wheel-container svg{
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+  
+  .pointer{
+    position:absolute; 
+    top:-5px; 
+    left:50%; 
+    transform:translateX(-50%);
+    width:0; 
+    height:0; 
+    border-left:15px solid transparent; 
+    border-right:15px solid transparent;
+    border-top:25px solid #0f172a; 
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,.3));
+    z-index:10;
+  }
+
+  .side{
+    background:#fff; border:1px solid rgba(15,23,42,.08); border-radius:16px; padding:18px;
+    display:flex; flex-direction:column; gap:14px; align-items:center; justify-content:center;
+  }
+  .btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:10px;
+    padding:12px 16px; border-radius:12px; border:1px solid rgba(15,23,42,.14);
+    background:var(--btn); color:#fff; font-weight:800; cursor:pointer;
+    box-shadow:0 6px 16px rgba(0,0,0,.12);
+    transition: background .2s ease, transform .06s ease, box-shadow .2s ease;
+    width: min(240px, 80%);
+    text-decoration: none;
+    font-size: 14px;
+  }
+  .btn:hover{ background:var(--btn-hover); transform: translateY(-1px); box-shadow:0 10px 24px rgba(0,0,0,.18)}
+  .btn:disabled{opacity:.6; cursor:not-allowed; transform: none;}
+  .pill{background:#f8fafc;border:1px solid rgba(15,23,42,.08);border-radius:999px;padding:8px 12px;font-weight:700}
+
+  /* Modal */
+  .modal{display:none; position:fixed; inset:0; background:rgba(0,0,0,.55);
+    align-items:center; justify-content:center; z-index:1000}
+  .modal.show{display:flex}
+  .modal-content{width:90%; max-width:520px; background:#fff; border-radius:16px; padding:22px;
+    box-shadow:0 12px 30px rgba(0,0,0,.25); text-align:center}
+  .modal h2{margin:6px 0 8px}
+
+  /* Responsive text size */
+  .wheel-text { font-size: 14px; }
+  
+  @media (max-width: 600px){
+    .wheel-text { font-size: 11px !important; }
+  }
+  
+  @media (max-width: 380px){
+    .wheel-text { font-size: 9px !important; }
+  }
+</style>
+</head>
+<body>
+  <div class="shell">
+    <header>
+      <img src="multimedia/y-tu-que-planes.png" alt="Logo Y tú qué planes">
+      <div>
+        <h1>Ruleta</h1>
+        <p>Gira y descubre una categoría al azar. ¡Suerte!</p>
+      </div>
+    </header>
+
+    <div class="main">
+      <div class="wheel-wrap">
+        <div class="wheel-container">
+          <div class="pointer"></div>
+          <svg id="wheel" viewBox="0 0 400 400">
+            <!-- La ruleta se dibuja aquí -->
+          </svg>
+        </div>
+      </div>
+
+      <aside class="side">
+        <img src="multimedia/y-tu-que-planes.png" alt="Logo" style="width:96px;height:96px;object-fit:contain;border-radius:12px;border:1px solid rgba(15,23,42,.08)">
+        <div class="pill">Último resultado: <span id="last">—</span></div>
+        <button id="spin" class="btn">🎡 Girar</button>
+        <a class="btn" href="inicio.html" aria-label="Volver al inicio">Volver a Inicio</a>
+      </aside>
+    </div>
+  </div>
+
+  <!-- Modal resultado -->
+  <div id="modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-content">
+      <h2 id="modal-title">¡Resultado!</h2>
+      <p id="modal-text"></p>
+      <button id="modal-ok" class="btn" style="margin-top:10px;">Entendido</button>
+    </div>
+  </div>
+
+  <!-- Confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+<script>
+/* ====== Config ====== */
+const SEGMENTOS = [
+  "ATRACTIVOS TURÍSTICOS",
+  "ACTIVIDADES",
+  "GASTRONOMÍA",
+  "DANZAS",
+  "ATRACTIVOS TURÍSTICOS",
+  "ACTIVIDADES",
+  "GASTRONOMÍA",
+  "DANZAS"
+];
+// Colores más vibrantes
+const COLS = ["#33aba0","#2fa197","#2a968d","#238a81"];
+
+/* ====== Variables globales ====== */
+const wheel = document.getElementById('wheel');
+const spinBtn = document.getElementById('spin');
+const lastEl = document.getElementById('last');
+const modal = document.getElementById('modal');
+const modalText = document.getElementById('modal-text');
+const modalOk = document.getElementById('modal-ok');
+
+let currentRotation = 0;
+let spinning = false;
+
+/* ====== Dibujo de la ruleta ====== */
+function drawWheel() {
+  const viewSize = 400;
+  const centerX = viewSize / 2;
+  const centerY = viewSize / 2;
+  const radius = 180;
+  
+  wheel.innerHTML = '';
+  
+  const n = SEGMENTOS.length;
+  const anglePerSegment = (Math.PI * 2) / n;
+  
+  // Crear grupo para los segmentos
+  const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  g.setAttribute('id', 'wheel-group');
+  
+  // Dibujar segmentos
+  for (let i = 0; i < n; i++) {
+    const startAngle = i * anglePerSegment - Math.PI / 2;
+    const endAngle = (i + 1) * anglePerSegment - Math.PI / 2;
+    
+    const x1 = centerX + radius * Math.cos(startAngle);
+    const y1 = centerY + radius * Math.sin(startAngle);
+    const x2 = centerX + radius * Math.cos(endAngle);
+    const y2 = centerY + radius * Math.sin(endAngle);
+    
+    const largeArcFlag = anglePerSegment > Math.PI ? 1 : 0;
+    
+    // Crear path del segmento
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    const d = [
+      `M ${centerX} ${centerY}`,
+      `L ${x1} ${y1}`,
+      `A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2}`,
+      'Z'
+    ].join(' ');
+    
+    path.setAttribute('d', d);
+    path.setAttribute('fill', COLS[i % COLS.length]);
+    path.setAttribute('stroke', 'white');
+    path.setAttribute('stroke-width', '2');
+    g.appendChild(path);
+    
+    // Añadir texto
+    const textAngle = startAngle + anglePerSegment / 2;
+    const textRadius = radius * 0.65;
+    const textX = centerX + textRadius * Math.cos(textAngle);
+    const textY = centerY + textRadius * Math.sin(textAngle);
+    
+    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    text.setAttribute('x', textX);
+    text.setAttribute('y', textY);
+    text.setAttribute('fill', '#fff');
+    text.setAttribute('font-size', '10');          // un poco más pequeño
+    text.setAttribute('font-weight', '900');       // más grueso
+    text.setAttribute('font-family', 'Poppins, Arial, sans-serif'); // tipografía más bonita
+    text.setAttribute('letter-spacing', '0.5px');  // un poco de espacio entre letras
+    text.setAttribute('text-anchor', 'middle');
+    text.setAttribute('dominant-baseline', 'middle');
+    text.setAttribute('style', 'text-shadow: 1px 1px 2px rgba(0,0,0,.4);');
+
+    
+    // Rotar el texto para que sea legible
+    const rotationAngle = (textAngle + Math.PI / 2) * (180 / Math.PI);
+    text.setAttribute('transform', `rotate(${rotationAngle} ${textX} ${textY})`);
+    
+    // Dividir texto largo en líneas
+    const words = SEGMENTOS[i].split(' ');
+    if (words.length > 1) {
+      const tspan1 = document.createElementNS('http://www.w3.org/2000/svg', 'tspan');
+      tspan1.textContent = words[0];
+      tspan1.setAttribute('x', textX);
+      tspan1.setAttribute('dy', '-0.3em');
+      text.appendChild(tspan1);
+      
+      const tspan2 = document.createElementNS('http://www.w3.org/2000/svg', 'tspan');
+      tspan2.textContent = words.slice(1).join(' ');
+      tspan2.setAttribute('x', textX);
+      tspan2.setAttribute('dy', '1.2em');
+      text.appendChild(tspan2);
+    } else {
+      text.textContent = SEGMENTOS[i];
+    }
+    
+    g.appendChild(text);
+  }
+  
+  wheel.appendChild(g);
+  
+  // Círculo central
+  const centerCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  centerCircle.setAttribute('cx', centerX);
+  centerCircle.setAttribute('cy', centerY);
+  centerCircle.setAttribute('r', '50');
+  centerCircle.setAttribute('fill', 'white');
+  centerCircle.setAttribute('stroke', '#e5e7eb');
+  centerCircle.setAttribute('stroke-width', '2');
+  wheel.appendChild(centerCircle);
+  
+  // Logo en el centro
+  const image = document.createElementNS('http://www.w3.org/2000/svg', 'image');
+  image.setAttributeNS('http://www.w3.org/1999/xlink', 'href', 'multimedia/y-tu-que-planes.png');
+  image.setAttribute('x', centerX - 35);
+  image.setAttribute('y', centerY - 35);
+  image.setAttribute('width', '70');
+  image.setAttribute('height', '70');
+  image.setAttribute('clip-path', 'circle(35px at center)');
+  wheel.appendChild(image);
+}
+
+/* ====== Animación de giro ====== */
+function spin() {
+  if (spinning) return;
+  spinning = true;
+spinBtn.disabled = true;
+stopDrum();   // si había un drum sonando, se corta
+playDrum();   // empieza el nuevo drum roll
+
+
+  const wheelGroup = document.getElementById('wheel-group');
+  
+  // Resetear la transición y la rotación actual sin animación
+  wheelGroup.style.transition = 'none';
+  wheelGroup.style.transform = `rotate(${currentRotation}deg)`;
+  
+  // Forzar un reflow para que el navegador aplique el cambio sin transición
+  wheelGroup.offsetHeight;
+  
+  // Ahora aplicar la nueva animación
+  const spins = 5 + Math.random() * 3; // Entre 5 y 8 vueltas
+  const finalAngle = Math.random() * 360;
+  const totalRotation = spins * 360 + finalAngle;
+  const targetRotation = currentRotation + totalRotation;
+  
+  wheelGroup.style.transformOrigin = '200px 200px';
+  wheelGroup.style.transition = 'transform 4.76s cubic-bezier(0.17, 0.67, 0.12, 0.99)';
+  wheelGroup.style.transform = `rotate(${targetRotation}deg)`;
+  
+  setTimeout(() => {
+    currentRotation = targetRotation;
+    spinning = false;
+    spinBtn.disabled = false;
+
+    // Calcular resultado
+    const n = SEGMENTOS.length;
+    const anglePerSegment = 360 / n;
+const normalizedAngle = (360 - (currentRotation % 360) + anglePerSegment / 2) % 360;
+    const index = Math.floor(normalizedAngle / anglePerSegment) % n;
+    const result = SEGMENTOS[index];
+    
+    // Mostrar resultado
+    lastEl.textContent = result;
+    modalText.innerHTML = `<strong style="font-size: 1.5em; color: #33aba0;">${result}</strong>`;
+    modal.classList.add('show');
+    
+    // Confetti
+    if (typeof confetti !== 'undefined') {
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 }
+      });
+    }
+  }, 4760);
+}
+
+/* ====== Event Listeners ====== */
+spinBtn.addEventListener('click', spin);
+modalOk.addEventListener('click', () => modal.classList.remove('show'));
+modal.addEventListener('click', (e) => {
+  if (e.target === modal) modal.classList.remove('show');
+});
+
+/* ====== Inicializar ====== */
+drawWheel();
+</script>
+<script>function playDrum(){
+  const drum = document.getElementById('drum');
+  if(!drum) return;
+  drum.currentTime = 0;
+  drum.volume = 0.55; // volumen moderado
+  drum.play().catch(()=>{});
+}
+
+function playDrum(){
+  const drum = document.getElementById('drum');
+  if(!drum) return;
+  drum.loop = false;       // que termine naturalmente
+  drum.currentTime = 0;
+  drum.volume = 0.55;
+  drum.play().catch(()=>{});
+}
+
+function stopDrum(){
+  const drum = document.getElementById('drum');
+  if(!drum) return;
+  drum.pause();
+  drum.currentTime = 0;
+}
+
+</script>
+<audio id="drum" src="multimedia/drum-roll-sound-effect-278576.mp3" preload="auto"></audio>
+
+</body>
+</html>
