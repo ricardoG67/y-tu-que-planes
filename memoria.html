@@ -34,7 +34,7 @@ body{
   border:1px solid rgba(15,23,42,.06); overflow:hidden; display:flex; flex-direction:column;
 }
 
-header{ display:flex; align-items:center; gap:14px; padding:min(22px,4vw) min(24px,4vw) 12px; flex-wrap:wrap; }
+header{ display:flex; align-items:center; gap:14px; padding:min(22px,4vw) min(24px,4vw) 12px;  }
 header img{ width:clamp(56px,12vw,88px); height:clamp(56px,12vw,88px); object-fit:contain; border:none; border-radius:12px; background:#fff; }
 header h1{ margin:0; font-size:clamp(20px,3.8vw,28px); line-height:1.2; }
 header p{ margin:6px 0 0; color:var(--muted); font-size:clamp(13px,2.8vw,14px); }
@@ -107,19 +107,35 @@ header p{ margin:6px 0 0; color:var(--muted); font-size:clamp(13px,2.8vw,14px); 
 
 .btn:focus-visible, .card:focus-visible{ outline:3px solid var(--ring); border-radius:12px; }
 
-@media (min-width:551px) and (max-width:660px){
-  .grid{ 
+@media (min-width:770px) and (max-width:1100px){
+  .grid{
     grid-template-columns: repeat(4, 1fr);
+    /* 3 filas para 12 cartas (4x3) que llenen el alto disponible */
+    grid-auto-rows: 1fr;
+    align-content: stretch;      /* estira las filas */
     gap: 6px;
+
+    /* da altura al grid: 95vh menos header+HUD+padding (ajusta 210px si hace falta) */
+    height: calc(95vh - 210px);
   }
-  .grid .card {
-    max-width: 100px;
-    margin: 0 auto;
+
+  /* que cada carta llene su celda */
+  .grid .card{
+    height: 100%;
+    aspect-ratio: auto;          /* desactiva la proporción fija para poder estirar */
   }
 }
 
+@media (min-width:550px) and (max-width:770px){
+  .grid{ 
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+
+}
+
 @media (max-width:550px) and (min-width:381px){
-  .grid{ grid-template-columns:repeat(4,1fr); gap:clamp(2px,2.5px,3px); }
+  .grid{ grid-template-columns:repeat(3,1fr); gap:clamp(2px,2.5px,3px); }
 }
 @media (max-width:380px){
   .grid{ grid-template-columns:repeat(3,1fr); gap:2px; }
@@ -139,17 +155,18 @@ header p{ margin:6px 0 0; color:var(--muted); font-size:clamp(13px,2.8vw,14px); 
 
 <body>
   <div class="shell">
-    <header>
+    <!-- <header>
       <img src="multimedia/y-tu-que-planes.webp" alt="Logo Y tú qué planes - PROMPERÚ">
       <div>
         <h1>Juego de Memoria</h1>
         <p>Encuentra todas las parejas antes de que el tiempo llegue a cero. ¡Suma puntos por cada acierto!</p>
       </div>
-    </header>
+    </header> -->
 
     <div class="hud">
       <div class="pill">Tiempo: ⏱️ <span id="time">40</span>s</div>
       <div class="pill">Puntaje: ⭐ <span id="score">0</span></div>
+      <button id="fullscreen-btn" class="btn btn-ghost">Pantalla completa</button>
       <a class="btn btn-ghost" href="index.html" aria-label="Volver al inicio">← Inicio</a>
     </div>
 
@@ -402,6 +419,23 @@ header p{ margin:6px 0 0; color:var(--muted); font-size:clamp(13px,2.8vw,14px); 
         audio.play().catch(e => console.log("No se pudo reproducir el audio:", e));
       }
     }
+
+    const fsBtn = document.getElementById("fullscreen-btn");
+
+fsBtn.addEventListener("click", () => {
+  if (!document.fullscreenElement) {
+    // activar fullscreen
+    document.documentElement.requestFullscreen()
+      .then(() => { fsBtn.textContent = "Pantalla Completa"; })
+      .catch(err => console.log("No se pudo activar fullscreen:", err));
+  } else {
+    // salir de fullscreen
+    document.exitFullscreen()
+      .then(() => { fsBtn.textContent = "Pantalla completa"; })
+      .catch(err => console.log("No se pudo salir de fullscreen:", err));
+  }
+});
+
   </script>
 
   <audio id="win-audio" src="multimedia/level-complete-394515.mp3" preload="auto"></audio>
